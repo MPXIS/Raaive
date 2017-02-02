@@ -1,4 +1,4 @@
 # Raaive
-Lijs met tooltjes
+Lijst met tooltjes
 
 - [x] [AGA-8](AGA-8.html)
