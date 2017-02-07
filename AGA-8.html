@@ -26,28 +26,6 @@ text {
     stroke-width: 0.5
 	stroke-opacity:0.25;
 }
-#Efficiency {
-    position:fixed;
-    top:5%;
-	bottom:5%;
-    left:5%;
-    right:5%;
-    background-color:#EEE;
-    color:#7F7F7F;
-    padding:0px;
-	z-index:1;
-}
-#Info {
-    position:fixed;
-    top:5%;
-	bottom:5%;
-    left:5%;
-    right:5%;
-    background-color:#EEE;
-    color:#000;
-    padding:20px;
-	z-index:1;
-}
 #Menu {
     position:fixed;
     top:0%;
@@ -113,8 +91,6 @@ text {
 </tr>
 </table>
 </div>
-<div id="Efficiency" style="visibility: hidden" onclick="document.getElementById('Efficiency').style.visibility = 'hidden';"></div>
-<div id="Info" style="visibility: hidden" onclick="document.getElementById('Info').style.visibility = 'hidden';"></div>
 
 <div id="Output"></div>
 <script type="text/javascript">
@@ -266,7 +242,7 @@ assen.append("text")
     .attr("transform", "rotate(-90)")
     .attr("x", -h/2 )
     .attr("y", 14)
-    .text("Flow [MNm³/d]");
+    .text("Density [kg/m³]");
 	
 legenda = vis.append("svg:g");
 	
