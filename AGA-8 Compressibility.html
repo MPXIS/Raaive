@@ -1,0 +1,753 @@
+<html>
+	<head>
+		<title>Natural Gas Compressibility</title>
+		<script src="https://d3js.org/d3.v3.min.js" charset="utf-8"></script>
+	</head>
+	<body>
+<style>
+path {
+    stroke: black;
+    fill: none;
+    stroke-width: 1;
+}
+ 
+line {
+    stroke: black;
+}
+ 
+text {
+    font-family: Arial;
+    font-size: 12pt;
+}
+.axis line {
+    fill: none;
+    stroke: gray;
+    shape-rendering: crispEdges;
+    stroke-width: 0.5
+	stroke-opacity:0.25;
+}
+#Menu {
+    position:fixed;
+    top:0%;
+    left:0%;
+	bottom:0%;
+    background-color:#EEE;
+    color:#000;
+	overflow-y: auto;
+	overflow-x: hidden;
+}
+#Output {
+    display: inline-block;
+    float:right;
+}
+
+</style>
+
+<div id="Menu">
+<table id="MainTable">
+<tr><td VALIGN="top">
+<b>Invoer flowing condities</b><br>
+<br>
+<input checked type="checkbox" id="OperatingPoint" onchange="update();">Operating point:<br>
+<table margin-right="100">
+<tr><td>Flow</td><td><input type="text" size="10" id="Qin" value="1" onkeyup="update()" onchange="update();"></input> MNm<sup>3</sup>/d</td></tr>
+<tr><td>Druk</td><td><input type="text" size="10" id="Pin" value="100" onkeyup="update()" onchange="update();"></input> barg</td></tr>
+<tr><td>Temperatuur</td><td><input type="text" size="10" id="Tin" value="70" onkeyup="update()" onchange="update();"></input> &degC</td></tr>
+<tr><td>Type gas</td><td>
+<select name="gas" style="width: 150px" onchange="typegas(this.value);">
+  <option value="Hoogcalorisch">Hoogcalorisch</option>
+  <option value="Groningen kwaliteit">Groningen kwaliteit</option>
+  <option value="Aangepast">Aangepast</option>
+</select>
+</td></tr>
+</table>
+<div id="componenten" style="display: none">
+<table>
+<tr><th>Component</th> <th>Mol %</th></tr>
+<tr><td>Methane</td><td><input type="text" id="X1" value="83.7696"></input></td></tr>
+<tr><td>Nitrogen</td><td><input type="text" id="X2" value="7.1038"></input></td></tr>
+<tr><td>Carbon dioxide</td><td><input type="text" id="X3" value="0.9919"></input></td></tr>
+<tr><td>Ethane</td><td><input type="text" id="X4" value="4.8148"></input></td></tr>
+<tr><td>Propane</td><td><input type="text" id="X5" value="1.2703"></input></td></tr>
+<tr><td>Water</td><td><input type="text" id="X6" value="1.1708"></input></td></tr>
+<tr><td>Hydrogen sulfide</td><td><input type="text" id="X7" value="0"></input></td></tr>
+<tr><td>Hydrogen</td><td><input type="text" id="X8" value="0"></input></td></tr>
+<tr><td>Carbon monoxide</td><td><input type="text" id="X9" value="0"></input></td></tr>
+<tr><td>Oxygen</td><td><input type="text" id="X10" value="0"></input></td></tr>
+<tr><td>iso-Butane</td><td><input type="text" id="X11" value="0.2309"></input></td></tr>
+<tr><td>n-Butane</td><td><input type="text" id="X12" value="0.3260"></input></td></tr>
+<tr><td>iso-Pentate</td><td><input type="text" id="X13" value="0.0912"></input></td></tr>
+<tr><td>n-Pentane</td><td><input type="text" id="X14" value="0.0050"></input></td></tr>
+<tr><td>n-Hexane</td><td><input type="text" id="X15" value="0.0654"></input></td></tr>
+<tr><td>n-Heptane</td><td><input type="text" id="X16" value="0.0208"></input></td></tr>
+<tr><td>n-Octane</td><td><input type="text" id="X17" value="0.007"></input></td></tr>
+<tr><td>n-Nonane</td><td><input type="text" id="X18" value="0.0198"></input></td></tr>
+<tr><td>n-Decane</td><td><input type="text" id="X19" value="0"></input></td></tr>
+<tr><td>Helium</td><td><input type="text" id="X20" value="0.0763"></input></td></tr>
+<tr><td>Argon</td><td><input type="text" id="X21" value="0"></input></td></tr>
+</table>
+</div>
+</td>
+</tr>
+</table>
+</div>
+
+<div id="Output"></div>
+<script type="text/javascript">
+visible = false;
+
+function urlParam(name, w){
+    w = w || window;
+    var rx = new RegExp('[\&|\?]'+name+'=([^\&\#]+)'),
+        val = w.location.search.match(rx);
+    return !val ? '':val[1];
+}
+
+function plot(graph) {
+//graph [[[x1, y1], [x2, y2], [xn, yn]], [...]]
+//title
+w = window.innerWidth
+|| document.documentElement.clientWidth
+|| document.body.clientWidth;
+
+h = window.innerHeight
+|| document.documentElement.clientHeight
+|| document.body.clientHeight;
+
+w = w - document.getElementById('MainTable').rows[0].cells[0].offsetWidth - 34;
+h = h - 24;
+//w = 1570/1.2;
+//h = 1099/1.2;
+margin = 50;
+
+xdata = [];
+ydata = [];
+
+for (j = 0; j < graph.length; j++) { 
+    for (i = 0; i < graph[j].length; i++) { 
+        xdata.push(graph[j][i][0]);
+        ydata.push(graph[j][i][1]);
+    }
+}
+
+if (OperatingPoint.checked) {
+xdata.push(Number(document.getElementById("Pin").value));
+ydata.push(Number(document.getElementById("Qin").value));
+}
+
+y = d3.scale.linear().domain([0, d3.max(ydata)*1.01]).range([h - margin, 10]),
+x = d3.scale.linear().domain([0, d3.max(xdata)*1.01]).range([margin, w - (10)]);
+
+zoom = d3.behavior.zoom()
+    .scaleExtent([1, 10])
+	.x(x)
+	.y(y)
+    .on("zoom", zoomed);
+
+document.getElementById("Output").innerHTML = "";
+
+vis = d3.select("#Output")
+    .append("svg:svg")
+    .attr("width", w)
+    .attr("height", h)
+	.attr("overflow","hidden")
+    .call(zoom);
+ 
+g = vis.append("svg:g");
+
+var line = d3.svg.line()
+    .x(function(d) { return x(d[0]); })
+    .y(function(d) { return y(d[1]); });
+
+xAxis = d3.svg.axis().scale(x).tickSize(h-(margin+10)).ticks(20).innerTickSize(h-margin-5),
+    xAxis2 = d3.svg.axis().scale(x).tickSize(h-(margin+10)).ticks(100).tickFormat(""),
+    yAxis = d3.svg.axis().scale(y).tickSize(-w+(margin+10)).ticks(10).orient("left").innerTickSize(5),
+    yAxis2 = d3.svg.axis().scale(y).tickSize(-w+(margin+10)).ticks(50).orient("left").tickFormat("");
+
+	colors = d3.scale.category10().domain(d3.range(0,10));
+
+g.selectAll("path")
+	.data(graph)
+	.enter().append("path")
+	.attr("class", "line")
+	.attr("d", line)
+	.style("stroke", function(d) { return colors(d); })
+	.style("stroke-width", "2")
+	.style("fill", function(d) { return colors(d); })
+	.style("fill-opacity", 0.05)
+	.attr("data-legend",function(d) { return d.Title; });
+
+rand = vis.append("svg:g");
+
+rand.append("rect")
+	.attr("x", 0)
+	.attr("y", 0)
+	.attr("width", margin)
+	.attr("height", h)
+	.style("fill", "white");
+
+rand.append("rect")
+	.attr("x", 0)
+	.attr("y", h-margin)
+	.attr("width", w)
+	.attr("height", margin)
+	.style("fill", "white");
+
+rand.append("rect")
+	.attr("x", 0)
+	.attr("y", 0)
+	.attr("width", w)
+	.attr("height", 10)
+	.style("fill", "white");
+
+rand.append("rect")
+	.attr("x", w-10)
+	.attr("y", 0)
+	.attr("width", 10)
+	.attr("height", h)
+	.style("fill", "white");
+
+assen = vis.append("svg:g");
+
+assen.append("g")
+    .attr("class", "x axis")
+    .attr("transform", "translate(0, 10)")
+    .call(xAxis);
+
+assen.append("g")
+    .attr("class", "x axis2")
+    .attr("transform", "translate(0, 10)")
+    .call(xAxis2);
+
+assen.append("g")
+    .attr("class", "y axis")
+    .attr("transform", "translate("+margin+", 0)")
+    .call(yAxis);
+
+assen.append("g")
+    .attr("class", "y axis2")
+    .attr("transform", "translate("+margin+", 0)")
+    .call(yAxis2);
+
+assen.append("text")      // text label for the x axis
+    .attr("class", "x label")
+    .attr("x", w / 2)
+    .attr("y", h-11 )
+    .style("text-anchor", "middle")
+    .text("Pressure [barg]");
+
+assen.append("text")
+    .attr("class", "y label")
+    .attr("text-anchor", "middle")
+    .attr("transform", "rotate(-90)")
+    .attr("x", -h/2 )
+    .attr("y", 14)
+    .text("Compressibility Z [-]");
+	
+legenda = vis.append("svg:g");
+	
+legenda.selectAll("rect")
+	.data(graph)
+	.enter().append("rect")
+	.attr("x", 80-4)
+	.attr("y", function(d, n) { return n*20+40-4 })
+	.attr("width", 240)
+	.attr("height", 20)
+	.style("fill", "white");
+
+legenda.selectAll("rect2")
+	.data(graph)
+	.enter().append("rect")
+	.attr("x", 80)
+	.attr("y", function(d, n) { return n*20+40  })
+	.attr("width", 12)
+	.attr("height", 12)
+	.style("fill", function(d) { return colors(d) });
+
+legenda.selectAll("textLegend")
+	.data(graph)
+	.enter().append("text")
+	.attr("x", 100)
+	.attr("y", function(d, n) { return n*20+40+12 })
+	.style("fill", "black")
+	.text(function(d) { return d.Title; });	
+	
+if (OperatingPoint.checked) {	
+	g.append("circle")
+		.attr("cx", x(Number(document.getElementById("Pin").value)))
+		.attr("cy", y(Number(document.getElementById("Qin").value)))
+		.attr("r", 6)
+		.style("stroke", "black")
+		.style("fill-opacity", 0.05)
+		.style("stroke-width", "2");}
+}
+
+function zoomed() {
+  zoom.translate([Math.max(Math.min(zoom.translate()[0], (zoom.scale()-1)*-margin),(zoom.scale()-1)*-(w-10)), Math.max(Math.min(zoom.translate()[1], (zoom.scale()-1)*-10),(zoom.scale()-1)*-(h-margin))]);
+  g.attr("transform", "translate(" + zoom.translate() + ")scale(" + d3.event.scale + ")");
+  vis.select(".x.axis").call(xAxis);
+  vis.select(".x.axis2").call(xAxis2);
+  vis.select(".y.axis").call(yAxis);
+  vis.select(".y.axis2").call(yAxis2);
+}
+
+function typegas(type) {
+//update in the selection box
+	if (type=="Aangepast") {
+		document.getElementById("componenten").style.display="inline";
+	} else if (type=="Groningen kwaliteit") {
+		document.getElementById("componenten").style.display="none";
+		document.getElementById("X1").value = "81.358";
+		document.getElementById("X2").value = "14.109";
+		document.getElementById("X3").value = "0.988";
+		document.getElementById("X4").value = "2.847";
+		document.getElementById("X5").value = "0.394";
+		document.getElementById("X6").value = "0";
+		document.getElementById("X7").value = "0";
+		document.getElementById("X8").value = "0.001";
+		document.getElementById("X9").value = "0";
+		document.getElementById("X10").value = "0";
+		document.getElementById("X11").value = "0.065";
+		document.getElementById("X12").value = "0.074";
+		document.getElementById("X13").value = "0.018";
+		document.getElementById("X14").value = "0.04";
+		document.getElementById("X15").value = "0.024";
+		document.getElementById("X16").value = "0.018";
+		document.getElementById("X17").value = "0.006"; 
+		document.getElementById("X18").value = "0.003";
+		document.getElementById("X19").value = "0.003";
+		document.getElementById("X20").value = "0.048";
+		document.getElementById("X21").value = "0";
+	} else if (type=="Hoogcalorisch") {
+		document.getElementById("componenten").style.display="none";
+		document.getElementById("X1").value = "93.413";
+		document.getElementById("X2").value = "1.570";
+		document.getElementById("X3").value = "1.293";
+		document.getElementById("X4").value = "2.880";
+		document.getElementById("X5").value = "0.439";
+		document.getElementById("X6").value = "0";
+		document.getElementById("X7").value = "0.001";
+		document.getElementById("X8").value = "0.001";
+		document.getElementById("X9").value = "0";
+		document.getElementById("X10").value = "0";
+		document.getElementById("X11").value = "0.076";
+		document.getElementById("X12").value = "0.082";
+		document.getElementById("X13").value = "0.028";
+		document.getElementById("X14").value = "0.089";
+		document.getElementById("X15").value = "0.032";
+		document.getElementById("X16").value = "0.027";
+		document.getElementById("X17").value = "0.024"; 
+		document.getElementById("X18").value = "0";
+		document.getElementById("X19").value = "0";
+		document.getElementById("X20").value = "0.047";
+		document.getElementById("X21").value = "0";
+	}
+	update();
+}
+
+function update() {
+	Qn = Number(document.getElementById("Qin").value);
+	P = (Number(document.getElementById("Pin").value) + 1.01325) / 10;
+	T = Number(document.getElementById("Tin").value) + 273.15;
+	//get mol fractions
+	XI = [0, document.getElementById("X1").value, document.getElementById("X2").value, document.getElementById("X3").value, document.getElementById("X4").value, document.getElementById("X5").value, document.getElementById("X6").value, document.getElementById("X7").value, document.getElementById("X8").value, document.getElementById("X9").value, document.getElementById("X10").value, document.getElementById("X11").value, document.getElementById("X12").value, document.getElementById("X13").value, document.getElementById("X14").value, document.getElementById("X15").value, document.getElementById("X16").value, document.getElementById("X17").value, document.getElementById("X18").value, document.getElementById("X19").value, document.getElementById("X20").value, document.getElementById("X21").value];
+
+	Density = Rho(P, T, XI);
+	DensityN = Rho(1.01325 / 10, 0 + 273.15, XI);
+
+
+	Total = [];
+
+	Total.push(CalculateRho(690, "Rho"));
+		
+	plot(Total);
+}
+
+function CalculateRho(DP, title) {
+//DP [barg]
+//Title
+MaxFlow = [];
+
+for (p = 0; p <= 50; p++) { 
+	druk = (DP / 50) * p
+	Density = Rho((druk + 1.01325) / 10, T, XI);
+    MaxFlow.push([druk, Density]);
+}
+
+MaxFlow.push([DP, 0]);
+MaxFlow.push([0, 0]);
+
+MaxFlow.Title = title;
+return MaxFlow;
+}
+
+
+function Rho(P, T, XI) {
+//P [MPa] (absolute)
+//T [K]
+//XI array of fractions
+
+	var total = XI.sum();
+    for (i = 1; i <= 21; i++) {
+        XI[i] = XI[i] / total;
+    }
+	//data
+	MW = Array(0, 16.043, 28.0135, 44.01, 30.07, 44.097, 18.0153, 34.082, 2.0159, 28.01, 31.9988, 58.123, 58.123, 72.15, 72.15, 86.177, 100.204, 114.231, 128.258, 142.285, 4.0026, 39.948);
+	A = Array(0, 0.1538326, 1.341953, -2.998583, -0.04831228, 0.3757965, -1.589575, -0.05358847, 
+        0.88659463, -0.71023704, -1.471722, 1.32185035, -0.78665925, 0.00000000229129, 0.1576724, -0.4363864, -0.04408159, 
+        -0.003433888, 0.03205905, 0.02487355, 0.07332279, -0.001600573, 0.6424706, -0.4162601, -0.06689957, 
+        0.2791795, -0.6966051, -0.002860589, -0.008098836, 3.150547, 0.007224479, -0.7057529, 0.5349792, 
+        -0.07931491, -1.418465, -5.99905E-17, 0.1058402, 0.03431729, -0.007022847, 0.02495587, 0.04296818, 
+        0.7465453, -0.2919613, 7.294616, -9.936757, -0.005399808, -0.2432567, 0.04987016, 0.003733797, 1.874951, 
+        0.002168144, -0.6587164, 0.000205518, 0.009776195, -0.02048708, 0.01557322, 0.006862415, -0.001226752, 
+        0.002850908);
+	B = Array(0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 2, 2, 2, 2, 2, 2, 2, 2, 2, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 4, 4, 4, 4, 4, 4, 4, 5, 5, 5, 5, 5, 6, 6, 7, 7, 8, 8, 8, 9, 9);
+	C = Array(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 0, 0, 1, 1, 1, 1, 1, 1, 1, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 1, 1, 1, 1, 1, 0, 1, 1, 1, 1, 0, 1, 0, 1, 1, 1, 1, 1, 1);
+	K = Array(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 3, 2, 2, 2, 4, 4, 0, 0, 2, 2, 2, 4, 4, 4, 4, 0, 1, 1, 2, 2, 3, 3, 4, 4, 4, 0, 0, 2, 2, 2, 4, 4, 0, 2, 2, 4, 4, 0, 2, 0, 2, 1, 2, 2, 2, 2);
+	G = Array(0, 0, 0, 0, 0, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 1, 0, 1, 0, 0);
+	Q = Array(0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 1, 0, 0, 1, 0, 0, 0, 0, 0, 1);
+	F = Array(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0);
+	S = Array(0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0);
+	W = Array(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0);
+	U = Array(0, 0, 0.5, 1, 3.5, -0.5, 4.5, 0.5, 7.5, 9.5, 6, 12, 12.5, -6, 2, 3, 2, 2, 11, -0.5, 0.5, 0, 4, 6, 21, 23, 22, -1, -0.5, 7, -1, 6, 4, 1, 9, -13, 21, 8, -0.5, 0, 2, 7, 9, 22, 23, 1, 9, 3, 8, 23, 1.5, 5, -0.5, 4, 7, 3, 0, 1, 0);
+	EI = Array(0, 151.3183, 99.73778, 241.9606, 244.1667, 298.1183, 514.0156, 296.355, 26.95794,
+         105.5348, 122.7667, 324.0689, 337.6389, 365.5999, 370.6823, 402.636293, 427.72263,
+         450.325022, 470.840891, 489.558373, 2.610111, 119.6299);
+	KI = Array(0, 0.4619255, 0.4479153, 0.4557489, 0.5279209, 0.583749, 0.3825868, 0.4618263, 0.3514916, 0.4533894,
+         0.4186954, 0.6406937, 0.6341423, 0.6738577, 0.6798307, 0.7175118, 0.7525189, 0.784955, 0.8152731, 0.8437826, 0.3589888,
+         0.4216551);
+	GI = Array(0, 0, 0.027815, 0.189065, 0.0793, 0.141239, 0.3325, 0.0885, 0.034369, 0.038953, 0.021,
+         0.256692, 0.281835, 0.332267, 0.366911, 0.289731, 0.337542, 0.383381, 0.427354, 0.469659, 0, 0);
+	QI = Array(0, 0, 0, 0.69, 0, 0, 1.06775, 0.633276, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0);
+	FI = Array(0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0);
+	SI = Array(0, 0, 0, 0, 0, 0, 1.5822, 0.39, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0);
+	WI = Array(0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0);
+	//molar weight mixture
+	MWM = 0;
+    for (i=1; i <= 21; i++) {
+        MWM += XI[i]*MW[i];
+    }
+	//EIJ, UIJ, KIJ, GIJ
+	var EIJ = [[]];
+	var UIJ = [[]];
+	var KIJ = [[]];
+	var GIJ = [[]];
+	for (i=1; i <= 21; i++) {
+		EIJ[i]=[];
+		UIJ[i]=[];
+		KIJ[i]=[];
+		GIJ[i]=[];
+		for (j=1; j <= 21; j++) {
+			EIJ[i][j]=1;
+			UIJ[i][j]=1;
+			KIJ[i][j]=1;
+			GIJ[i][j]=1;
+		}	
+	}
+	EIJ[1][2] = 0.97164;
+	EIJ[1][3] = 0.960644;
+	EIJ[1][5] = 0.994635;
+	EIJ[1][6] = 0.708218;
+	EIJ[1][7] = 0.931484;
+	EIJ[1][8] = 1.17052;
+	EIJ[1][9] = 0.990126;
+	EIJ[1][11] = 1.01953;
+	EIJ[1][12] = 0.989844;
+	EIJ[1][13] = 1.00235;
+	EIJ[1][14] = 0.999268;
+	EIJ[1][15] = 1.107274;
+	EIJ[1][16] = 0.88088;
+	EIJ[1][17] = 0.880973;
+	EIJ[1][18] = 0.881067;
+	EIJ[1][19] = 0.881161;
+	EIJ[2][3] = 1.02274;
+	EIJ[2][4] = 0.97012;
+	EIJ[2][5] = 0.945939;
+	EIJ[2][6] = 0.746954;
+	EIJ[2][7] = 0.902271;
+	EIJ[2][8] = 1.08632;
+	EIJ[2][9] = 1.00571;
+	EIJ[2][10] = 1.021;
+	EIJ[2][11] = 0.946914;
+	EIJ[2][12] = 0.973384;
+	EIJ[2][13] = 0.95934;
+	EIJ[2][14] = 0.94552;
+	EIJ[3][4] = 0.925053;
+	EIJ[3][5] = 0.960237;
+	EIJ[3][6] = 0.849408;
+	EIJ[3][7] = 0.955052;
+	EIJ[3][8] = 1.28179;
+	EIJ[3][9] = 1.5;
+	EIJ[3][11] = 0.906849;
+	EIJ[3][12] = 0.897362;
+	EIJ[3][13] = 0.726255;
+	EIJ[3][14] = 0.859764;
+	EIJ[3][15] = 0.855134;
+	EIJ[3][16] = 0.831229;
+	EIJ[3][17] = 0.80831;
+	EIJ[3][18] = 0.786323;
+	EIJ[3][19] = 0.765171;
+	EIJ[4][5] = 1.02256;
+	EIJ[4][6] = 0.693168;
+	EIJ[4][7] = 0.946871;
+	EIJ[4][8] = 1.16446;
+	EIJ[4][12] = 1.01306;
+	EIJ[4][14] = 1.00532;
+	EIJ[5][8] = 1.034787;
+	EIJ[5][12] = 1.0049;
+	EIJ[7][15] = 1.008692;
+	EIJ[7][16] = 1.010126;
+	EIJ[7][17] = 1.011501;
+	EIJ[7][18] = 1.012821;
+	EIJ[7][19] = 1.014089;
+	EIJ[8][9] = 1.1;
+	EIJ[8][11] = 1.3;
+	EIJ[8][12] = 1.3;
+
+	UIJ[1][2] = 0.886106;
+	UIJ[1][3] = 0.963827;
+	UIJ[1][5] = 0.990877;
+	UIJ[1][7] = 0.736833;
+	UIJ[1][8] = 1.15639;
+	UIJ[1][12] = 0.992291;
+	UIJ[1][14] = 1.00367;
+	UIJ[1][15] = 1.302576;
+	UIJ[1][16] = 1.191904;
+	UIJ[1][17] = 1.205769;
+	UIJ[1][18] = 1.219634;
+	UIJ[1][19] = 1.233498;
+	UIJ[2][3] = 0.835058;
+	UIJ[2][4] = 0.816431;
+	UIJ[2][5] = 0.915502;
+	UIJ[2][7] = 0.993476;
+	UIJ[2][8] = 0.408838;
+	UIJ[2][12] = 0.993556;
+	UIJ[3][4] = 0.96987;
+	UIJ[3][7] = 1.04529;
+	UIJ[3][9] = 0.9;
+	UIJ[3][15] = 1.066638;
+	UIJ[3][16] = 1.077634;
+	UIJ[3][17] = 1.088178;
+	UIJ[3][18] = 1.098291;
+	UIJ[3][19] = 1.108021;
+	UIJ[4][5] = 1.065173;
+	UIJ[4][7] = 0.971926;
+	UIJ[4][8] = 1.61666;
+	UIJ[4][11] = 1.25;
+	UIJ[4][12] = 1.25;
+	UIJ[4][13] = 1.25;
+	UIJ[4][14] = 1.25;
+	UIJ[7][15] = 1.028973;
+	UIJ[7][16] = 1.033754;
+	UIJ[7][17] = 1.038338;
+	UIJ[7][18] = 1.042735;
+	UIJ[7][19] = 1.046966;
+
+	KIJ[1][2] = 1.00363;
+	KIJ[1][3] = 0.995933;
+	KIJ[1][5] = 1.007619;
+	KIJ[1][7] = 1.00008;
+	KIJ[1][8] = 1.02326;
+	KIJ[1][12] = 0.997596;
+	KIJ[1][14] = 1.002529;
+	KIJ[1][15] = 0.982962;
+	KIJ[1][16] = 0.983565;
+	KIJ[1][17] = 0.982707;
+	KIJ[1][18] = 0.981849;
+	KIJ[1][19] = 0.980991;
+	KIJ[2][3] = 0.982361;
+	KIJ[2][4] = 1.00796;
+	KIJ[2][7] = 0.942596;
+	KIJ[2][8] = 1.03227;
+	KIJ[3][4] = 1.00851;
+	KIJ[3][7] = 1.00779;
+	KIJ[3][15] = 0.910183;
+	KIJ[3][16] = 0.895362;
+	KIJ[3][17] = 0.881152;
+	KIJ[3][18] = 0.86752;
+	KIJ[3][19] = 0.854406;
+	KIJ[4][5] = 0.986893;
+	KIJ[4][7] = 0.999969;
+	KIJ[4][8] = 1.02034;
+	KIJ[7][15] = 0.96813; 
+	KIJ[7][16] = 0.96287;
+	KIJ[7][17] = 0.957828;
+	KIJ[7][18] = 0.952441;
+	KIJ[7][19] = 0.948338;
+
+	GIJ[1][3] = 0.807653;
+	GIJ[1][8] = 1.95731;
+	GIJ[2][3] = 0.982746;
+	GIJ[3][4] = 0.370296;
+	GIJ[3][6] = 1.67309;
+
+	RGAS = 0.00831451;
+	BI = [];
+    for (n=1; n <= 18; n++) {
+        BI[n]=0;
+    }
+    K1 = 0;
+    U1 = 0;
+    G1 = 0;
+    Q1 = 0;
+    F1 = 0;
+    E1 = 0;
+    for (i = 1; i <= 21; i++) {
+        K1 += XI[i] * Math.pow(KI[i], 2.5);
+        U1 += XI[i] * Math.pow(EI[i], 2.5);
+        G1 += XI[i] * GI[i];
+        Q1 += XI[i] * QI[i];
+        F1 += XI[i] * XI[i] * FI[i];
+        E1 += XI[i] * EI[i];
+    }
+    TCM = 1.261 * E1;
+    DCM = Math.pow(K1, -1.2);
+    K1 = K1 * K1;
+    U1 = U1 * U1;
+    
+    for (i = 1; i <= 8; i++) {
+        for (j = i+1; j <= 19; j++) {
+            XIJ = XI[i] * XI[j];
+            if (XIJ != 0) {
+                K1 += 2 * XIJ * (Math.pow(KIJ[i][j], 5) - 1) * Math.pow(KI[i] * KI[j], 2.5);
+                U1 += 2 * XIJ * (Math.pow(UIJ[i][j], 5) - 1) * Math.pow(EI[i] * EI[j], 2.5);
+                G1 += XIJ * (GIJ[i][j] - 1) * (GI[i] + GI[j]);
+            }
+        }
+    }
+    
+    for (i = 1; i <= 21; i++) {
+        for (j = i; j <= 21; j++) {
+            XIJ = XI[i] * XI[j];
+            if (XIJ != 0) {
+                if (i != j) {
+                    XIJ = XIJ * 2;
+                }
+                EIJ0 = EIJ[i][j] * Math.sqrt(EI[i] * EI[j]);
+                GIJ0 = GIJ[i][j] * (GI[i] + GI[j]) / 2;
+                for (n = 1; n <= 18; n++) { 
+                    BN = Math.pow(GIJ0 + 1 - G[n], G[n])
+                         * Math.pow(QI[i] * QI[j] + 1 - Q[n], Q[n])
+                         * Math.pow(Math.sqrt(FI[i] * FI[j]) + 1 - F[n], F[n])
+                         * Math.pow(SI[i] * SI[j] + 1 - S[n], S[n])
+                         * Math.pow(WI[i] * WI[j] + 1 - W[n], W[n]);
+                    BI[n] += A[n] * XIJ * Math.pow(EIJ0, U[n]) * Math.pow(KI[i] * KI[j], 1.5) * BN;
+                }
+            }
+        }
+    }
+    
+	
+    K1 = Math.pow(K1, 0.2);
+    U1 = Math.pow(U1, 0.2);
+	CNS = [];
+    for (n = 13; n <= 58; n++) {
+        CNS[n] = Math.pow(G1 + 1 - G[n], G[n])
+                 * Math.pow(Math.pow(Q1, 2) + 1 - Q[n], Q[n])
+                 * Math.pow(F1 + 1 - F[n], F[n])
+                 * A[n] * Math.pow(U1, U[n]);
+    }
+
+	
+    //Goalseeker
+    var TOL = 0.0000000005;
+    Y1 = 0.000001;
+    Y2 = 40;
+    var D = 0;
+    F1 = PZOFDT(Y1, T) - P;
+    F2 = PZOFDT(Y2, T) - P;
+    if (F1 * F2 >= 0) {
+        return 0;
+    }
+    for (i = 1; i <= 50; i++) {
+        Y3 = Y1 - F1 * (Y2 - Y1) / (F2 - F1);
+        F3 = PZOFDT(Y3, T) - P;
+    
+        D = Y1 * F2 * F3 / ((F1 - F2) * (F1 - F3)) + Y2 * F1 * F3 / ((F2 - F1) * (F2 - F3)) + Y3 * F1 * F2 / ((F3 - F1) * (F3 - F2));
+		        
+		if (((D - Y1) * (D - Y2)) >= 0) {
+            D = (Y1 + Y2) / 2;
+        }
+        F = PZOFDT(D, T) - P;
+				
+        if (Math.abs(F) <= TOL) {
+            // return D * MWM;
+			return P/(RGAS*T*D)
+        }
+        if ((Math.abs(F3) < Math.abs(F)) && ((F * F3) > 0)) {
+            if (F3 * F1 > 0) {
+                Y1 = Y3;
+                F1 = F3;
+            } else {
+                Y2 = Y3;
+                F2 = F3;
+            }
+        } else {
+            if (F * F3 < 0) {
+                Y1 = D;
+                F1 = F;
+                Y2 = Y3;
+                F2 = F3;
+            } else if (F3 * F1 > 0) {
+                Y1 = D;
+                F2 = F;
+            } else {
+                Y2 = D;
+                F2 = F;
+            }
+        }
+    }
+    return 0;
+}
+
+
+
+function PZOFDT(D2, T) {
+    //Returns pressure for a given density
+    var DR = D2 * Math.pow(K1, 3);
+    var BMIX = 0;
+	for (n = 1; n <= 18; n++) {
+    BMIX += BI[n] / Math.pow(T, U[n]);
+    }
+    
+    Z = 1 + BMIX * D2;
+	for (n = 13; n <= 18; n++) {
+    Z -= DR * CNS[n] / Math.pow(T, U[n]);
+    }
+    
+    for (n = 13; n <= 58; n++) {
+        Z += CNS[n] / Math.pow(T, U[n]) * (B[n] - C[n] * K[n] * Math.pow(DR, K[n])) * Math.pow(DR, B[n])
+            * Math.exp(-C[n] * Math.pow(DR, K[n]));
+    }
+    return D2 * RGAS * T * Z;
+}
+
+Array.prototype.sum = function () {
+    var total = 0;
+    var i = this.length; 
+
+    while (i--) {
+        total += parseFloat(this[i]);
+    }
+
+    return total;
+}
+
+P = urlParam("P");
+if (P != ""){document.getElementById("Pin").value = Number(P);}
+Q = urlParam("Q");
+if (Q != ""){document.getElementById("Qin").value = Number(Q);}
+T = urlParam("T");
+if (T != ""){document.getElementById("Tin").value = Number(T);}
+Checked = urlParam("Checked");
+if (Checked != ""){
+	Checked = Checked.split(",");
+	for (var i in Checked ){
+		if (typeof Checked[i] == "string") {document.getElementById(Checked[i]).checked = true;}
+	}
+}
+update();	
+</script>
+
+	</body>
+</html>
