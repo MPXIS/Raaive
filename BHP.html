@@ -61,12 +61,13 @@ text {
 <tr><td>BHP</td><td><input type="text" size="10" id="BHP" value="" onchange="update();"></input> barg</td></tr>
 <tr><td>TVD</td><td><input type="text" size="10" id="TVD" value="3000" onchange="update();"></input> m</td></tr>
 <tr><td><b>Medium</b><br></td></tr>
-<tr><td>THT</td><td><input type="text" size="10" id="THT" value="10" onchange="update();"></input> &degC</td></tr>
-<tr><td>BHT</td><td><input type="text" size="10" id="BHT" value="100" onchange="update();"></input> &degC</td></tr>
+<tr><td>THT</td><td><input type="text" size="10" id="THT" value="8" onchange="update();"></input> &degC</td></tr>
+<tr><td>Geotherm</td><td><input type="text" size="10" id="Geotherm" value="3.0303" onchange="update();"></input> &degC/100m</td></tr>
 <tr><td>Type gas</td><td>
 <select name="gas" style="width: 150px" onchange="typegas(this.value);">
   <option value="Hoogcalorisch">Hoogcalorisch</option>
   <option value="Groningen kwaliteit">Groningen kwaliteit</option>
+  <option value="Stikstof">Stikstof</option>
   <option value="Aangepast">Aangepast</option>
 </select>
 </td></tr>
@@ -112,13 +113,13 @@ function update() {
 	BHP = Number(document.getElementById("BHP").value);
 	TVD = Number(document.getElementById("TVD").value);
 	THT = Number(document.getElementById("THT").value) + 273.15;
-	BHT = Number(document.getElementById("BHT").value) + 273.15;
+	Geotherm = Number(document.getElementById("Geotherm").value);
 	//get mol fractions
 	XI = [0, document.getElementById("X1").value, document.getElementById("X2").value, document.getElementById("X3").value, document.getElementById("X4").value, document.getElementById("X5").value, document.getElementById("X6").value, document.getElementById("X7").value, document.getElementById("X8").value, document.getElementById("X9").value, document.getElementById("X10").value, document.getElementById("X11").value, document.getElementById("X12").value, document.getElementById("X13").value, document.getElementById("X14").value, document.getElementById("X15").value, document.getElementById("X16").value, document.getElementById("X17").value, document.getElementById("X18").value, document.getElementById("X19").value, document.getElementById("X20").value, document.getElementById("X21").value];
 	
-	if( document.getElementById("THP").value != "" && document.getElementById("TVD").value != "") {calculateBHP(THP, TVD, THT, BHT, XI)}
+	if( document.getElementById("THP").value != "" && document.getElementById("TVD").value != "") {calculateBHP(THP, TVD, THT, Geotherm, XI)}
 	
-	if( document.getElementById("BHP").value != "" && document.getElementById("TVD").value != "") {calculateTHP(BHP, TVD, THT, BHT, XI)}
+	if( document.getElementById("BHP").value != "" && document.getElementById("TVD").value != "") {calculateTHP(BHP, TVD, THT, Geotherm, XI)}
 	
 	if( document.getElementById("THP").value != "" && document.getElementById("BHP").value != "") {calculateTVD()}
 
@@ -127,11 +128,11 @@ function update() {
 	//plot(Total);
 }
 
-function T(THT, BHT, TVD, D) {
-	return (((BHT-THT)/TVD)*D)+THT;
+function T(THT, Geotherm, TVD, D) {
+	return (Geotherm/10*D)+THT;
 }
 
-function calculateBHP(THP, TVD, THT, BHT, XI) {
+function calculateBHP(THP, TVD, THT, Geotherm, XI) {
 	TVD=Math.round(TVD/10);
 
 	pressure = new Array(TVD+1);
@@ -139,29 +140,29 @@ function calculateBHP(THP, TVD, THT, BHT, XI) {
 	pressure[0] = [THP, 0];
 	temperature[0] = [THT, 0];
 	for (var i = 1; i < TVD+1; i++) {
-		density = Rho((pressure[i - 1][0] + 1.01325) / 10, T(THT, BHT, TVD, i), XI);
+		density = Rho((pressure[i - 1][0] + 1.01325) / 10, T(THT, Geotherm, TVD, i), XI);
 		dP = density * 9.81 * 10 / 1e5;
 		pressure[i] = [pressure[i - 1][0] + dP ,i*10];
-		temperature[i] = [T(THT, BHT, TVD, i), i*10];
+		temperature[i] = [T(THT, Geotherm, TVD, i), i*10];
 }
 plot(pressure);
 //plot(temperature);
 }
 
-function calculateTHP(BHP, TVD, THT, BHT, XI) {
+function calculateTHP(BHP, TVD, THT, Geotherm, XI) {
 	TVD=Math.round(TVD/10);
 
 	pressure = new Array(TVD+1);
 	pressure[0] = [BHP, TVD*10];
 	for (var i = 1; i < TVD+1; i++) {
-		density = Rho((pressure[i - 1][0] + 1.01325) / 10, T(THT, BHT, TVD, (TVD-i)), XI);
+		density = Rho((pressure[i - 1][0] + 1.01325) / 10, T(THT, Geotherm, TVD, (TVD-i)), XI);
 		dP = density * 9.81 * 10 / 1e5;
 		pressure[i] = [pressure[i - 1][0] - dP ,(TVD-i)*10];
 }
 plot(pressure);
 }
 
-function calculateTVD(THP, BHP, THT, BHT, XI) {
+function calculateTVD(THP, BHP, THT, Geotherm, XI) {
 
 plot(pressure);
 }
@@ -189,7 +190,7 @@ ydata = [];
         ydata.push(graph[i][1]);
     }
 
-y = d3.scale.linear().domain([d3.max(ydata)*1.01, d3.min(ydata)]).range([h - margin, 10]),
+y = d3.scale.linear().domain([d3.max(ydata), d3.min(ydata)]).range([h - margin, 10]),
 x = d3.scale.linear().domain([d3.min(xdata), d3.max(xdata)*1.01]).range([margin, w - (10)]);
 
 zoom = d3.behavior.zoom()
@@ -338,6 +339,29 @@ function typegas(type) {
 		document.getElementById("X18").value = "0";
 		document.getElementById("X19").value = "0";
 		document.getElementById("X20").value = "0.047";
+		document.getElementById("X21").value = "0";
+	} else if (type=="Stikstof") {
+		document.getElementById("componenten").style.display="none";
+		document.getElementById("X1").value = "0";
+		document.getElementById("X2").value = "100";
+		document.getElementById("X3").value = "0";
+		document.getElementById("X4").value = "0";
+		document.getElementById("X5").value = "0";
+		document.getElementById("X6").value = "0";
+		document.getElementById("X7").value = "0";
+		document.getElementById("X8").value = "0";
+		document.getElementById("X9").value = "0";
+		document.getElementById("X10").value = "0";
+		document.getElementById("X11").value = "0";
+		document.getElementById("X12").value = "0";
+		document.getElementById("X13").value = "0";
+		document.getElementById("X14").value = "0";
+		document.getElementById("X15").value = "0";
+		document.getElementById("X16").value = "0";
+		document.getElementById("X17").value = "0"; 
+		document.getElementById("X18").value = "0";
+		document.getElementById("X19").value = "0";
+		document.getElementById("X20").value = "0";
 		document.getElementById("X21").value = "0";
 	}
 	update();
