@@ -209,9 +209,6 @@ vis = d3.select("#Output")
 	.attr("overflow","hidden")
     .call(zoom);
  
-var focus = vis.append("g")                                // **********
-    .style("display", "none");                             // **********
- 
 g = vis.append("svg:g");
 
 var line = d3.svg.line()
@@ -219,7 +216,7 @@ var line = d3.svg.line()
     .y(function(d) { return y(d[1]); });
 
 	xAxis = d3.svg.axis().scale(x).tickSize(h-(margin+10)).ticks(20).innerTickSize(h-margin-5),
-    yAxis = d3.svg.axis().scale(y).tickSize((margin+10)-w).ticks(10).orient("left").innerTickSize(margin+10-w);
+   	yAxis = d3.svg.axis().scale(y).tickSize((margin+10)-w).ticks(10).orient("left").innerTickSize(margin+10-w);
 
 g.append("path")
 	.attr("class", "line")
@@ -284,17 +281,20 @@ assen.append("text")
     .attr("x", -h/2 )
     .attr("y", 14)
     .text("TVD [m]");
-		
-    // append the circle at the intersection               // **********
-    focus.append("circle")                                 // **********
+	
+var focus = vis.append("g")                                // **********
+    .style("display", "none");                             // **********
+ 		
+// append the circle at the intersection               // **********
+focus.append("circle")                                 // **********
         .style("fill", "none")                             // **********
         .style("stroke", "blue")                           // **********
         .attr("r", 4);                                     // **********
 		
-	focus.append("text")
-		.attr("x", -h/2 )
-		.attr("y", 14)
-		.text("placeholder");
+focus.append("text")
+	.attr("x", -h/2 )
+	.attr("y", 14)
+	.text("placeholder");
     
     // append the rectangle to capture mouse               // **********
     vis.append("rect")                                     // **********
