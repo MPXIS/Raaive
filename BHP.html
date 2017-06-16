@@ -209,6 +209,9 @@ vis = d3.select("#Output")
 	.attr("overflow","hidden")
     .call(zoom);
  
+var focus = vis.append("g")                                // **********
+    .style("display", "none");                             // **********
+ 
 g = vis.append("svg:g");
 
 var line = d3.svg.line()
@@ -281,6 +284,44 @@ assen.append("text")
     .attr("x", -h/2 )
     .attr("y", 14)
     .text("TVD [m]");
+		
+    // append the circle at the intersection               // **********
+    focus.append("circle")                                 // **********
+        .style("fill", "none")                             // **********
+        .style("stroke", "blue")                           // **********
+        .attr("r", 4);                                     // **********
+		
+	focus.append("text")
+		.attr("x", -h/2 )
+		.attr("y", 14)
+		.text("placeholder");
+    
+    // append the rectangle to capture mouse               // **********
+    vis.append("rect")                                     // **********
+        .attr("width", w)                        // **********
+        .attr("height", h)                       // **********
+        .style("fill", "none")                             // **********
+        .style("pointer-events", "all")                    // **********
+        .on("mouseover", function() { focus.style("display", null); })
+        .on("mouseout", function() { focus.style("display", "none"); })
+        .on("mousemove", mousemove);                       // **********
+
+    function mousemove() {                                 // **********
+        var x0 = x.invert(d3.mouse(this)[0]),              // **********
+            i = d3.bisect(xdata, x0);                  // **********
+  
+        focus.select("circle")                                 // **********
+			.style("fill", "none")                             // **********
+			.style("stroke", "blue")                           // **********
+			.attr("r", 6)                                 // **********
+			.attr("cx",  x(xdata[i]))
+			.attr("cy", y(ydata[i]) );		// **********
+		
+		focus.select("text")
+			.attr("x", x(xdata[i])+10 )
+			.attr("y", y(ydata[i])+5 )
+			.text(d3.round(xdata[i])+" barg at "+ydata[i]+" m TVD");
+		}
 }
 
 function zoomed() {
