@@ -51,16 +51,14 @@ text {
 <tr><td VALIGN="top">
 <b>Invoer flowing condities</b><br>
 <br>
-<input checked type="checkbox" id="OperatingPoint" onchange="update();">Operating point:<br>
 <table margin-right="100">
-<tr><td>Flow</td><td><input type="text" size="10" id="Qin" value="1" onkeyup="update()" onchange="update();"></input> MNm<sup>3</sup>/d</td></tr>
-<tr><td>Druk</td><td><input type="text" size="10" id="Pin" value="100" onkeyup="update()" onchange="update();"></input> barg</td></tr>
-<tr><td>Temperatuur</td><td><input type="text" size="10" id="Tin" value="70" onkeyup="update()" onchange="update();"></input> &degC</td></tr>
+<tr><td>Max. Pressure</td><td><input type="text" size="10" id="Pin" value="100" onkeyup="update()" onchange="update();"></input> barg</td></tr>
+<tr><td>Temperature</td><td><input type="text" size="10" id="Tin" value="70" onkeyup="update()" onchange="update();"></input> &degC</td></tr>
 <tr><td>Type gas</td><td>
 <select name="gas" style="width: 150px" onchange="typegas(this.value);">
-  <option value="Hoogcalorisch">Hoogcalorisch</option>
-  <option value="Groningen kwaliteit">Groningen kwaliteit</option>
-  <option value="Aangepast">Aangepast</option>
+  <option value="Hoogcalorisch">Hi-Cal Gas</option>
+  <option value="Groningen kwaliteit">Dutch Gas</option>
+  <option value="Aangepast">Specify Components</option>
 </select>
 </td></tr>
 </table>
@@ -132,11 +130,6 @@ for (j = 0; j < graph.length; j++) {
         xdata.push(graph[j][i][0]);
         ydata.push(graph[j][i][1]);
     }
-}
-
-if (OperatingPoint.checked) {
-xdata.push(Number(document.getElementById("Pin").value));
-ydata.push(Number(document.getElementById("Qin").value));
 }
 
 y = d3.scale.linear().domain([0, d3.max(ydata)*1.01]).range([h - margin, 10]),
@@ -275,15 +268,6 @@ legenda.selectAll("textLegend")
 	.attr("y", function(d, n) { return n*20+40+12 })
 	.style("fill", "black")
 	.text(function(d) { return d.Title; });	
-	
-if (OperatingPoint.checked) {	
-	g.append("circle")
-		.attr("cx", x(Number(document.getElementById("Pin").value)))
-		.attr("cy", y(Number(document.getElementById("Qin").value)))
-		.attr("r", 6)
-		.style("stroke", "black")
-		.style("fill-opacity", 0.05)
-		.style("stroke-width", "2");}
 }
 
 function zoomed() {
@@ -350,19 +334,14 @@ function typegas(type) {
 }
 
 function update() {
-	Qn = Number(document.getElementById("Qin").value);
-	P = (Number(document.getElementById("Pin").value) + 1.01325) / 10;
+	P = (Number(document.getElementById("Pin").value);
 	T = Number(document.getElementById("Tin").value) + 273.15;
 	//get mol fractions
 	XI = [0, document.getElementById("X1").value, document.getElementById("X2").value, document.getElementById("X3").value, document.getElementById("X4").value, document.getElementById("X5").value, document.getElementById("X6").value, document.getElementById("X7").value, document.getElementById("X8").value, document.getElementById("X9").value, document.getElementById("X10").value, document.getElementById("X11").value, document.getElementById("X12").value, document.getElementById("X13").value, document.getElementById("X14").value, document.getElementById("X15").value, document.getElementById("X16").value, document.getElementById("X17").value, document.getElementById("X18").value, document.getElementById("X19").value, document.getElementById("X20").value, document.getElementById("X21").value];
 
-	Density = Rho(P, T, XI);
-	DensityN = Rho(1.01325 / 10, 0 + 273.15, XI);
-
-
 	Total = [];
 
-	Total.push(CalculateRho(690, "Rho"));
+	Total.push(CalculateRho(P, "Z"));
 		
 	plot(Total);
 }
