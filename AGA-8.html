@@ -281,15 +281,6 @@ legenda.selectAll("textLegend")
 	.attr("y", function(d, n) { return n*20+40+12 })
 	.style("fill", "black")
 	.text(function(d) { return d.Title; });	
-	
-if (OperatingPoint.checked) {	
-	g.append("circle")
-		.attr("cx", x(Number(document.getElementById("Pin").value)))
-		.attr("cy", y(Number(document.getElementById("Qin").value)))
-		.attr("r", 6)
-		.style("stroke", "black")
-		.style("fill-opacity", 0.05)
-		.style("stroke-width", "2");}
 }
 
 function zoomed() {
