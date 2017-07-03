@@ -140,11 +140,6 @@ for (j = 0; j < graph.length; j++) {
     }
 }
 
-if (OperatingPoint.checked) {
-xdata.push(Number(document.getElementById("Pin").value));
-ydata.push(Number(document.getElementById("Qin").value));
-}
-
 y = d3.scale.linear().domain([0, d3.max(ydata)*1.01]).range([h - margin, 10]),
 x = d3.scale.linear().domain([0, d3.max(xdata)*1.01]).range([margin, w - (10)]);
 
