@@ -1,0 +1,38 @@
+body {
+	font-family: "Segoe UI";
+}
+path {
+    stroke: black;
+    fill: none;
+    stroke-width: 1;
+}
+ 
+line {
+    stroke: black;
+}
+ 
+text {
+    font-family: "Segoe UI";
+    font-size: 12pt;
+}
+.axis line {
+    fill: none;
+    stroke: gray;
+    shape-rendering: crispEdges;
+    stroke-width: 0.5
+	stroke-opacity:0.25;
+}
+#Menu {
+    position:fixed;
+    top:0%;
+    left:0%;
+	bottom:0%;
+    background-color:#EEE;
+    color:#000;
+	overflow-y: auto;
+	overflow-x: hidden;
+}
+#Output {
+    display: inline-block;
+    float:right;
+}
